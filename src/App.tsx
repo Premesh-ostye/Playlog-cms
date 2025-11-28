@@ -4,7 +4,6 @@ import { getApps, initializeApp } from 'firebase/app'
 import { collection, doc, getDocs, getFirestore, setDoc } from 'firebase/firestore'
 import {
   getAuth,
-  getIdTokenResult,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
@@ -105,8 +104,6 @@ const toSlug = (value: string, max = 60) =>
     max
   ) || 'banner'
 
-// We only enforce UID allowlist; no custom role claim required.
-const ENFORCE_ADMIN_ROLE = false
 // Comma-separated list of admin user IDs. Leave blank to allow any authenticated user.
 const ADMIN_UID_ALLOWLIST = (() => {
   const raw =
