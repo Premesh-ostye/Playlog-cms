@@ -106,7 +106,21 @@ const toSlug = (value: string, max = 60) =>
   ) || 'banner'
 
 // Toggle to true to enforce admin-only access (requires custom claim role: "admin").
-const ENFORCE_ADMIN_ROLE = true
+const ENFORCE_ADMIN_ROLE = false
+// Comma-separated list of admin user IDs. Leave blank to allow any authenticated user.
+const ADMIN_UID_ALLOWLIST = (() => {
+  const raw =
+    (import.meta.env as Record<string, string | undefined>).VITE_ADMIN_UIDS ||
+    (import.meta.env as Record<string, string | undefined>).EXPO_PUBLIC_ADMIN_UIDS ||
+    ''
+  return raw
+    .split(',')
+    .map((uid) => uid.trim())
+    .filter(Boolean)
+})()
+
+const isUidAllowed = (uid?: string | null) =>
+  !ADMIN_UID_ALLOWLIST.length || (!!uid && ADMIN_UID_ALLOWLIST.includes(uid))
 
 const withTimeout = async <T,>(promise: Promise<T>, ms: number, timeoutMessage: string) => {
   let timer: number | undefined
@@ -217,11 +231,20 @@ function App() {
         return
       }
       try {
-        let isAdmin = true
+        const uidAllowed = isUidAllowed(next.uid)
+        let denialReason = ''
+        let isAdmin = uidAllowed
+        if (!uidAllowed && ADMIN_UID_ALLOWLIST.length) {
+          denialReason = 'Account not on admin allowlist.'
+        }
         if (ENFORCE_ADMIN_ROLE) {
           const token = await getIdTokenResult(next, true)
           const role = (token.claims as Record<string, unknown>).role
-          isAdmin = role === 'admin'
+          const hasAdminRole = role === 'admin'
+          isAdmin = uidAllowed && hasAdminRole
+          if (!hasAdminRole) {
+            denialReason = 'Account missing admin role.'
+          }
         }
         setAuthorized(isAdmin)
         if (isAdmin) {
@@ -234,8 +257,8 @@ function App() {
           setAuthError(null)
         } else {
           setUser(null)
-          setStatus('Account not authorized (requires admin role).')
-          setAuthError('Your account is not allowed. Contact an admin.')
+          setStatus(denialReason || 'Account not authorized.')
+          setAuthError(denialReason || 'Your account is not allowed. Contact an admin.')
           await signOut(firebaseSetup.auth)
         }
       } catch (error) {
