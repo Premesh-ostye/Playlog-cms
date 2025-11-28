@@ -106,7 +106,7 @@ const toSlug = (value: string, max = 60) =>
   ) || 'banner'
 
 // Toggle to true to enforce admin-only access (requires custom claim role: "admin").
-const ENFORCE_ADMIN_ROLE = false
+const ENFORCE_ADMIN_ROLE = true
 // Comma-separated list of admin user IDs. Leave blank to allow any authenticated user.
 const ADMIN_UID_ALLOWLIST = (() => {
   const raw =
