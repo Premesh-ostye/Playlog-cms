@@ -105,8 +105,15 @@ const toSlug = (value: string, max = 60) =>
     max
   ) || 'banner'
 
-// Toggle to true to enforce admin-only access (requires custom claim role: "admin").
-const ENFORCE_ADMIN_ROLE = true
+const envBoolean = (value?: string) =>
+  value ? ['1', 'true', 'yes', 'on'].includes(value.toLowerCase()) : false
+
+// Toggle via env to enforce admin-only access (requires custom claim role: "admin").
+// Defaults to false so adding UIDs to the allowlist is enough for access.
+const ENFORCE_ADMIN_ROLE = envBoolean(
+  (import.meta.env as Record<string, string | undefined>).VITE_ENFORCE_ADMIN_ROLE ||
+    (import.meta.env as Record<string, string | undefined>).EXPO_PUBLIC_ENFORCE_ADMIN_ROLE
+)
 // Comma-separated list of admin user IDs. Leave blank to allow any authenticated user.
 const ADMIN_UID_ALLOWLIST = (() => {
   const raw =
