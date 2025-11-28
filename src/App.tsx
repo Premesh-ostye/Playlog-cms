@@ -105,15 +105,8 @@ const toSlug = (value: string, max = 60) =>
     max
   ) || 'banner'
 
-const envBoolean = (value?: string) =>
-  value ? ['1', 'true', 'yes', 'on'].includes(value.toLowerCase()) : false
-
-// Toggle via env to enforce admin-only access (requires custom claim role: "admin").
-// Defaults to false so adding UIDs to the allowlist is enough for access.
-const ENFORCE_ADMIN_ROLE = envBoolean(
-  (import.meta.env as Record<string, string | undefined>).VITE_ENFORCE_ADMIN_ROLE ||
-    (import.meta.env as Record<string, string | undefined>).EXPO_PUBLIC_ENFORCE_ADMIN_ROLE
-)
+// We only enforce UID allowlist; no custom role claim required.
+const ENFORCE_ADMIN_ROLE = false
 // Comma-separated list of admin user IDs. Leave blank to allow any authenticated user.
 const ADMIN_UID_ALLOWLIST = (() => {
   const raw =
@@ -244,23 +237,10 @@ function App() {
         if (!uidAllowed && ADMIN_UID_ALLOWLIST.length) {
           denialReason = 'Account not on admin allowlist.'
         }
-        if (ENFORCE_ADMIN_ROLE) {
-          const token = await getIdTokenResult(next, true)
-          const role = (token.claims as Record<string, unknown>).role
-          const hasAdminRole = role === 'admin'
-          isAdmin = uidAllowed && hasAdminRole
-          if (!hasAdminRole) {
-            denialReason = 'Account missing admin role.'
-          }
-        }
         setAuthorized(isAdmin)
         if (isAdmin) {
           setUser(next)
-          setStatus(
-            `Signed in as ${next.email || 'user'}${
-              ENFORCE_ADMIN_ROLE ? ' (admin).' : '.'
-            }`
-          )
+          setStatus(`Signed in as ${next.email || 'user'}.`)
           setAuthError(null)
         } else {
           setUser(null)
