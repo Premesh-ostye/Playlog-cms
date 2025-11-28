@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FirebaseOptions } from 'firebase/app'
 import { getApps, initializeApp } from 'firebase/app'
-import { collection, doc, getDocs, getFirestore, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDocs, getFirestore, setDoc } from 'firebase/firestore'
 import {
   getAuth,
   onAuthStateChanged,
@@ -404,12 +404,25 @@ function App() {
     setStatus('Editing existing banner. Save to apply changes.')
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    setErrors([])
+    setStatus('Deleting item...')
     setBanners((prev) => prev.filter((item) => item.id !== id))
     if (editingId === id) {
       setForm(emptyForm)
       setEditingId(null)
       setPreviewSrc('')
+    }
+    try {
+      if (firebaseSetup.status === 'ready' && firebaseSetup.db) {
+        await deleteDoc(doc(firebaseSetup.db, 'affiliateItems', id))
+        setStatus('Item deleted from Firestore.')
+      } else {
+        setStatus('Item removed locally (Firestore not ready).')
+      }
+    } catch (error) {
+      setErrors([(error as Error).message])
+      setStatus('Failed to delete item from Firestore.')
     }
   }
 
